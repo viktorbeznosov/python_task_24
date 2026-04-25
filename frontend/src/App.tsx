@@ -19,6 +19,8 @@ function App() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [modalTask, setModalTask] = useState<Task | null>(null);
+  const [modalMode, setModalMode] = useState<'view' | 'edit'>('view');
   
   const [filters, setFilters] = useState({
     status: '',
@@ -46,6 +48,19 @@ function App() {
   const [resultView, setResultView] = useState<ResultView>('table');
   
   const [currentMonth, setCurrentMonth] = useState(new Date());
+
+  useEffect(() => {
+    if (modalTask) {
+      setFormData({
+        name: modalTask.name,
+        description: modalTask.description,
+        status: modalTask.status,
+        priority: modalTask.priority,
+        tags: modalTask.tags || '',
+        date: modalTask.date,
+      });
+    }
+  }, [modalTask]);
 
   const fetchTasks = useCallback(async () => {
     setLoading(true);
@@ -195,7 +210,8 @@ function App() {
                 {dayTasks.slice(0, 2).map((task) => (
                   <div
                     key={task.id}
-                    className={`text-xs truncate p-1 mt-1 rounded ${
+                    onClick={() => { setModalTask(task); setModalMode('view'); }}
+                    className={`text-xs truncate p-1 mt-1 rounded cursor-pointer ${
                       task.status === 'done' ? 'bg-green-100 text-green-800' :
                       task.status === 'in_progress' ? 'bg-yellow-100 text-yellow-800' :
                       'bg-gray-100 text-gray-800'
@@ -612,6 +628,128 @@ function App() {
               </form>
             </div>
             {renderChatResult()}
+          </div>
+        )}
+
+        {modalTask && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-start mb-4">
+                <h3 className="text-lg font-semibold">
+                  {modalMode === 'view' ? 'Просмотр задачи' : 'Редактирование задачи'}
+                </h3>
+                <button
+                  onClick={() => setModalTask(null)}
+                  className="text-gray-400 hover:text-gray-600 text-xl"
+                >
+                  ×
+                </button>
+              </div>
+              
+              {modalMode === 'view' ? (
+                <div className="space-y-3">
+                  <div><span className="font-medium">Название:</span> {modalTask.name}</div>
+                  <div><span className="font-medium">Описание:</span> {modalTask.description || '-'}</div>
+                  <div><span className="font-medium">Статус:</span> {
+                    modalTask.status === 'done' ? 'Выполнено' : 
+                    modalTask.status === 'in_progress' ? 'В работе' : 'К выполнению'
+                  }</div>
+                  <div><span className="font-medium">Приоритет:</span> {
+                    modalTask.priority === 'high' ? 'Высокий' : 
+                    modalTask.priority === 'medium' ? 'Средний' : 'Низкий'
+                  }</div>
+                  <div><span className="font-medium">Дата:</span> {modalTask.date}</div>
+                  {modalTask.tags && <div><span className="font-medium">Теги:</span> {modalTask.tags}</div>}
+                  <button
+                    onClick={() => setModalMode('edit')}
+                    className="mt-4 w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                  >
+                    Редактировать
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={async (e) => {
+                  e.preventDefault();
+                  try {
+                    await updateTask(modalTask.id, formData);
+                    setModalTask(null);
+                    fetchTasks();
+                  } catch (err) {
+                    setError(err instanceof Error ? err.message : 'Failed to update task');
+                  }
+                }} className="space-y-3">
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Название</label>
+                    <input
+                      type="text"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      className="w-full border rounded px-3 py-2"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Описание</label>
+                    <textarea
+                      value={formData.description}
+                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      className="w-full border rounded px-3 py-2"
+                      rows={3}
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <label className="block text-sm text-gray-600 mb-1">Статус</label>
+                      <select
+                        value={formData.status}
+                        onChange={(e) => setFormData({ ...formData, status: e.target.value as TaskCreate['status'] })}
+                        className="w-full border rounded px-3 py-2"
+                      >
+                        <option value="todo">К выполнению</option>
+                        <option value="in_progress">В работе</option>
+                        <option value="done">Выполнено</option>
+                      </select>
+                    </div>
+                    <div className="flex-1">
+                      <label className="block text-sm text-gray-600 mb-1">Приоритет</label>
+                      <select
+                        value={formData.priority}
+                        onChange={(e) => setFormData({ ...formData, priority: e.target.value as TaskCreate['priority'] })}
+                        className="w-full border rounded px-3 py-2"
+                      >
+                        <option value="low">Низкий</option>
+                        <option value="medium">Средний</option>
+                        <option value="high">Высокий</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Дата</label>
+                    <input
+                      type="date"
+                      value={formData.date}
+                      onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                      className="w-full border rounded px-3 py-2"
+                    />
+                  </div>
+                  <div className="flex gap-2 pt-2">
+                    <button
+                      type="submit"
+                      className="flex-1 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                    >
+                      Сохранить
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteTask(modalTask.id)}
+                      className="px-4 py-2 bg-red-100 text-red-700 rounded hover:bg-red-200"
+                    >
+                      Удалить
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
           </div>
         )}
       </main>
