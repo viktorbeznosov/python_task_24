@@ -1,4 +1,4 @@
-import { Task } from './api';
+import { Task, TaskCreate } from '../api';
 
 export const STATUS_LABELS: Record<Task['status'], string> = {
   todo: 'К выполнению',
@@ -30,14 +30,14 @@ export const getPriorityBadgeClasses = (priority: Task['priority']): string => {
   return `px-2 py-1 rounded text-xs ${classes[priority]}`;
 };
 
-export const DEFAULT_FORM_DATA: Omit<Task, 'id' | 'created_at' | 'updated_at' | 'completed_at'> = {
+export const getDefaultFormData = (): TaskCreate => ({
   name: '',
   description: '',
   status: 'todo',
   priority: 'medium',
   tags: null,
   date: new Date().toISOString().split('T')[0],
-};
+});
 
 export const FILTERS_DEFAULT = {
   status: '',

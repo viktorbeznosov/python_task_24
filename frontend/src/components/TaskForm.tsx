@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Task, TaskCreate } from '../api';
-import { DEFAULT_FORM_DATA } from '../utils/taskUtils';
+import { getDefaultFormData } from '../utils/taskUtils';
 
 interface TaskFormProps {
   task?: Task | null;
@@ -10,7 +10,7 @@ interface TaskFormProps {
 }
 
 export const TaskForm = ({ task, onSubmit, onCancel, isLoading }: TaskFormProps) => {
-  const [formData, setFormData] = useState<TaskCreate>(DEFAULT_FORM_DATA);
+  const [formData, setFormData] = useState<TaskCreate>(() => getDefaultFormData());
   const [validationError, setValidationError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -24,7 +24,7 @@ export const TaskForm = ({ task, onSubmit, onCancel, isLoading }: TaskFormProps)
         date: task.date,
       });
     } else {
-      setFormData(DEFAULT_FORM_DATA);
+      setFormData(getDefaultFormData());
     }
   }, [task]);
 

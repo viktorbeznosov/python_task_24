@@ -17,7 +17,7 @@ const App = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [filters, setFilters] = useState(FILTERS_DEFAULT);
+  const [filters] = useState(FILTERS_DEFAULT);
 
   const fetchTasks = useCallback(async () => {
     setIsLoading(true);
