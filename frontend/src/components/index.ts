@@ -4,3 +4,4 @@ export { TaskList } from './TaskList';
 export { Calendar } from './Calendar';
 export { ChatInterface } from './ChatInterface';
 export { TaskModal } from './TaskModal';
+export { TaskHistoryModal } from './TaskHistoryModal';

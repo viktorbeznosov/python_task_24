@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Task, TaskCreate, createTask, updateTask, deleteTask } from '../api';
 import { FILTERS_DEFAULT } from '../utils/taskUtils';
 import { TaskForm } from './TaskForm';
+import { TaskHistoryModal } from './TaskHistoryModal';
+import { getTaskHistory, addCreateAction, addUpdateAction, addDeleteAction } from '../utils/history';
 
 interface TaskListProps {
   tasks: Task[];
@@ -17,15 +19,35 @@ export const TaskList = ({ tasks, isLoading, onTasksChange }: TaskListProps) => 
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [isFormLoading, setIsFormLoading] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [historyTaskId, setHistoryTaskId] = useState<number | null>(null);
+  const [originalTasks] = useState<Map<number, Task>>(new Map());
 
   const handleSubmitTask = async (formData: TaskCreate) => {
     setIsFormLoading(true);
     setFormError(null);
     try {
       if (editingTask) {
+        const fields: Record<string, { oldValue: string; newValue: string }> = {};
+        if (editingTask.name !== formData.name) {
+          fields.name = { oldValue: editingTask.name, newValue: formData.name };
+        }
+        if (editingTask.description !== formData.description) {
+          fields.description = { oldValue: editingTask.description || '', newValue: formData.description || '' };
+        }
+        if (editingTask.status !== formData.status) {
+          fields.status = { oldValue: editingTask.status, newValue: formData.status || 'todo' };
+        }
+        if (editingTask.priority !== formData.priority) {
+          fields.priority = { oldValue: editingTask.priority, newValue: formData.priority || 'medium' };
+        }
         await updateTask(editingTask.id, formData);
+        if (Object.keys(fields).length > 0) {
+          addUpdateAction(editingTask.id, fields);
+        }
       } else {
-        await createTask(formData);
+        const newTask = await createTask(formData);
+        addCreateAction(newTask.id);
+        originalTasks.set(newTask.id, newTask);
       }
       resetForm();
       onTasksChange();
@@ -46,6 +68,8 @@ export const TaskList = ({ tasks, isLoading, onTasksChange }: TaskListProps) => 
     setIsFormLoading(true);
     try {
       await deleteTask(id);
+      addDeleteAction(id);
+      originalTasks.delete(id);
       onTasksChange();
     } catch (e) {
       setFormError(e instanceof Error ? e.message : 'Ошибка удаления');
@@ -214,24 +238,37 @@ export const TaskList = ({ tasks, isLoading, onTasksChange }: TaskListProps) => 
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-500">{task.date}</td>
                   <td className="px-4 py-3 text-right">
-                    <button
-                      onClick={() => handleEdit(task)}
-                      className="text-blue-600 hover:text-blue-800 mr-3"
-                    >
-                      Изменить
-                    </button>
-                    <button
-                      onClick={() => handleDelete(task.id)}
-                      className="text-red-600 hover:text-red-800"
-                    >
-                      Удалить
-                    </button>
-                  </td>
+                      <button
+                        onClick={() => setHistoryTaskId(task.id)}
+                        className="text-purple-600 hover:text-purple-800 mr-3"
+                      >
+                        История
+                      </button>
+                      <button
+                        onClick={() => handleEdit(task)}
+                        className="text-blue-600 hover:text-blue-800 mr-3"
+                      >
+                        Изменить
+                      </button>
+                      <button
+                        onClick={() => handleDelete(task.id)}
+                        className="text-red-600 hover:text-red-800"
+                      >
+                        Удалить
+                      </button>
+                    </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+      )}
+
+      {historyTaskId && (
+        <TaskHistoryModal
+          taskId={historyTaskId}
+          onClose={() => setHistoryTaskId(null)}
+        />
       )}
     </div>
   );
