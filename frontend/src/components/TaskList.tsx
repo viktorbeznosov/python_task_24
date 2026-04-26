@@ -3,7 +3,7 @@ import { Task, TaskCreate, createTask, updateTask, deleteTask } from '../api';
 import { FILTERS_DEFAULT } from '../utils/taskUtils';
 import { TaskForm } from './TaskForm';
 import { TaskHistoryModal } from './TaskHistoryModal';
-import { getTaskHistory, addCreateAction, addUpdateAction, addDeleteAction } from '../utils/history';
+import { addCreateAction, addUpdateAction, addDeleteAction } from '../utils/history';
 
 interface TaskListProps {
   tasks: Task[];
